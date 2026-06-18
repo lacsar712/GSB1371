@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "healthcheck": "node -e \"require('http').get('http://127.0.0.1:' + (process.env.PORT || 8137) + '/api/auth/ping', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""
   },
   "engines": {
     "node": ">=18"
