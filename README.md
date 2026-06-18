@@ -10,13 +10,68 @@
 
 1. 确保 Docker Desktop 已启动。
 2. 在根目录执行：`docker compose up --build`
-3. 等待容器启动完成（后端会自动创建 SQLite 数据库并执行建表与 Seed）。
+3. 等待容器启动完成：
+   - 后端会自动创建 SQLite 数据库并执行建表与 Seed。
+   - 前端会在后端健康检查通过后才启动，确保服务可用。
+4. 查看服务健康状态：`docker compose ps`
+
+> **启动可靠性说明**：
+> - 两服务均配置了 `restart: unless-stopped`，异常退出后会自动重启。
+> - 前端通过 `depends_on` + `condition: service_healthy` 等待后端健康检查通过后再启动，避免启动时序问题。
 
 ## 🔗 服务地址 (Services)
 
 - **Frontend**: http://localhost:31371
 - **Backend API**: http://localhost:8137
+- **Health Check**: http://localhost:8137/api/auth/ping
 - **Database**: SQLite 文件挂载于后端容器 `/app/data/course.sqlite`（通过 Volume `backend_data` 持久化）
+
+## 🔧 环境变量 (Environment Variables)
+
+所有环境变量均使用 `UPPER_SNAKE_CASE` 命名：
+
+| 变量名         | 说明                 | 默认值                  |
+|----------------|----------------------|-------------------------|
+| `PORT`         | 后端服务端口         | `8137`                  |
+| `SQLITE_PATH`  | SQLite 数据库文件路径 | `/app/data/course.sqlite` |
+| `LOG_LEVEL`    | 日志级别             | `info`                  |
+
+## 🔍 排障指南 (Troubleshooting)
+
+### 查看容器状态
+```bash
+docker compose ps
+```
+
+### 查看服务日志
+```bash
+# 查看所有服务日志
+docker compose logs
+
+# 仅查看后端日志（跟随输出）
+docker compose logs -f backend
+
+# 仅查看前端日志
+docker compose logs frontend
+```
+
+### 健康检查失败
+- 确认后端容器是否正常运行：`docker compose ps backend`
+- 查看后端启动日志：`docker compose logs backend`
+- 手动测试健康检查端点：`curl http://localhost:8137/api/auth/ping`
+- 重启后端服务：`docker compose restart backend`
+
+### 前端无法访问后端
+- 确认后端健康检查状态：`docker compose ps backend`（`STATUS` 列应显示 `healthy`）
+- 确认前端已启动：`docker compose ps frontend`
+- 检查 Nginx 代理配置：前端通过 `/api` 路径代理到 `backend:8137`
+
+### 重置数据
+如需完全重置数据库，删除 Volume 后重建：
+```bash
+docker compose down -v
+docker compose up --build
+```
 
 ## 🧪 测试账号
 
