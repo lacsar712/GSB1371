@@ -8,8 +8,9 @@ services:
       - backend_data:/app/data
     ports:
       - "8137:8137"
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8137/api/auth/ping', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "npm", "run", "healthcheck"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -20,14 +21,15 @@ services:
     ports:
       - "31371:80"
     volumes:
-      # 挂载静态资源，本地改 CSS/HTML 立即生效，无需重建镜像
       - ./frontend/index.html:/usr/share/nginx/html/index.html
       - ./frontend/admin.html:/usr/share/nginx/html/admin.html
       - ./frontend/student.html:/usr/share/nginx/html/student.html
       - ./frontend/css:/usr/share/nginx/html/css
       - ./frontend/js:/usr/share/nginx/html/js
+    restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   backend_data:
